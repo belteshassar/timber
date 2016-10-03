@@ -1,39 +1,46 @@
 #!usr/bin/env python3.5
-# main.py
 
 from collections import deque
 from datetime import datetime
 from math import pi, sin
 from random import random
+from statistics import mean
 
 from bokeh.layouts import column
 from bokeh.models import DatetimeTickFormatter
 from bokeh.plotting import figure, curdoc
 
-# create a plot and style its properties
-p = figure()
-r = p.line(x=[], y=[], line_width=2)
+fig = figure()
+value = fig.line(x=[], y=[], line_width=2)
+rolling_avg = fig.line(x=[], y=[], line_width=2)
 
-p.xaxis.formatter = DatetimeTickFormatter(formats={
+fig.xaxis.formatter = DatetimeTickFormatter(formats={
         'seconds': ['%H:%M:%S'],
         'minutes': ['%H:%M:%S'],
         'hours': ['%H:%M:%S'],
     }
 )
 
-ds = r.data_source
 data = {
-        'x': deque(maxlen=20),
-        'y': deque(maxlen=20),
+        'x': deque(maxlen=100),
+        'y': deque(maxlen=100),
        }
+
+y_avg = deque(maxlen=100)
 
 
 def add_value():
     time = datetime.now()
     data['x'].append(time)
     data['y'].append(random() + sin(pi*time.second/5))
-    ds.data = {key: list(item) for key, item in data.items()}
+    y_avg.append(mean(data['y']))
+    value.data_source.data = {key: list(item) for key, item in data.items()}
+
+    rolling_avg.data_source.data = {
+        'x': list(data['x']),
+        'y': list(y_avg),
+    }
 
 
-curdoc().add_root(column(p))
-curdoc().add_periodic_callback(add_value, 1000)
+curdoc().add_root(column(fig))
+curdoc().add_periodic_callback(add_value, 2000)
